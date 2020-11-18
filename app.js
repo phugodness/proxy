@@ -7,6 +7,7 @@ const logger = require('morgan');
 const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
 const cors = require('cors');
+const { createProxyMiddleware } = require('http-proxy-middleware')
 
 const app = express();
 app.use(cors());
@@ -18,7 +19,32 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
-app.use('/users', usersRouter);
+
+const onProxyReq = (proxyReq, req, res) => {
+  console.log('on req');
+}
+
+const onProxyRes = (proxyRes, req, res) => {
+  console.log('on res');
+}
+
+const onError = (err, req, res) => {
+  res.writeHead(500, {
+    'Content-Type': 'text/plain'
+  })
+  res.end('Something went wrong. And we are reporting a custom error message.')
+}
+
+app.use(
+  '/api/users',
+  createProxyMiddleware({
+    target: 'http://backend:3000',
+    changeOrigin: true,
+    onProxyReq,
+    onProxyRes,
+    onError
+  })
+)
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {
